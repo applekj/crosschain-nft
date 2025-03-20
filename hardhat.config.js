@@ -11,7 +11,7 @@ require("hardhat-deploy-ethers");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.24",
+  solidity: "0.8.20",
   namedAccounts: {
     firstAccount: {
       default: 0

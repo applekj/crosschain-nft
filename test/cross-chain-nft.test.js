@@ -42,6 +42,13 @@ describe('source chain -> dest chain tests', async () => {
         }
     )
 
+    it('test if the user can get a wrapped nft in destination chain',
+        async () => {
+            const owner = await wnft.ownerOf(0)
+            expect(owner).to.equal(firstAccount)
+        }
+    )
+
     // test if the user can get a wrapped nft in destination chain
 
     // destination chain -> source chain
@@ -49,4 +56,23 @@ describe('source chain -> dest chain tests', async () => {
     // test if the user can burn the wnft and send ccip message in destination chain
 
     // test if the user have the nft unlocked in source chain
+})
+
+describe('destination chain -> source chain', async () => {
+    it('test if the user can burn the wnft and send ccip message in destination chain',
+        async () => {
+            await ccipSimulator.requestLinkFromFaucet(nftPoolBurnAndMint.target, ethers.parseEther('10'))
+            await wnft.approve(nftPoolBurnAndMint.target, 0)
+            await nftPoolBurnAndMint.burnAndMint(0, firstAccount, chainSelector, nftPoolLockAndRelease.target)
+            const wnftTotal = await wnft.totalSupply()
+            expect(wnftTotal).to.equal(0)
+        }
+    )
+
+    it('test if the user have the nft unlocked in source chain',
+        async () => {
+            const owner = await nft.ownerOf(0)
+            expect(owner).to.equal(firstAccount)
+        }
+    )
 })
