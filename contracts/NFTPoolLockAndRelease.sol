@@ -40,15 +40,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
     string private s_lastReceivedText; // Store the last received text.
 
-    // Mapping to keep track of allowlisted destination chains.
-    mapping(uint64 => bool) public allowlistedDestinationChains;
-
-    // Mapping to keep track of allowlisted source chains.
-    mapping(uint64 => bool) public allowlistedSourceChains;
-
-    // Mapping to keep track of allowlisted senders.
-    mapping(address => bool) public allowlistedSenders;
-
     IERC20 private s_linkToken;
 
     // remember to add visibility for the variable
@@ -58,9 +49,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         uint256 tokenId;
         address newOwner;
     }
-
-    // remember to add visibility for the variable
-    mapping(uint256 => bool) public tokenLocked;
 
     /// @notice Constructor initializes the contract with the router address.
     /// @param _router The address of the router contract.
@@ -74,27 +62,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         nft = MyToken(nftAddr);
     }
 
-    /// @dev Updates the allowlist status of a destination chain for transactions.
-    function allowlistDestinationChain(
-        uint64 _destinationChainSelector,
-        bool allowed
-    ) external onlyOwner {
-        allowlistedDestinationChains[_destinationChainSelector] = allowed;
-    }
-
-    /// @dev Updates the allowlist status of a source chain for transactions.
-    function allowlistSourceChain(
-        uint64 _sourceChainSelector,
-        bool allowed
-    ) external onlyOwner {
-        allowlistedSourceChains[_sourceChainSelector] = allowed;
-    }
-
-    /// @dev Updates the allowlist status of a sender for transactions.
-    function allowlistSender(address _sender, bool allowed) external onlyOwner {
-        allowlistedSenders[_sender] = allowed;
-    }
-
     // lock NFT and send CCIP transaction
     function lockAndSendNFT(
         uint256 tokenId,
@@ -102,10 +69,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         uint64 destChainSelector,
         address destReceiver
     ) public returns (bytes32) {
-        // verify if the transaction is sent by owner
-        // comment this because the check is already performed by ERC721
-        // require(nft.ownerOf(tokenId) == msg.sender, "you are not the owner of the NFT");
-
         // tansfer the NFT from owner to the pool
         nft.transferFrom(msg.sender, address(this), tokenId);
         // send request to Chainlink CCIP to send the NFT to the other Chain
@@ -115,7 +78,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
             destReceiver,
             payload
         );
-        tokenLocked[tokenId] = true;
         return messageId;
     }
 
@@ -171,14 +133,13 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
-        s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
+        // s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
         RequestData memory requestData = abi.decode(
             any2EvmMessage.data,
             (RequestData)
         );
         uint256 tokenId = requestData.tokenId;
         address newOwner = requestData.newOwner;
-        require(tokenLocked[tokenId], "the NFT is not locked");
         nft.transferFrom(address(this), newOwner, tokenId);
         emit TokenUnlocked(tokenId, newOwner);
     }

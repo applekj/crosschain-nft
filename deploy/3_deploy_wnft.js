@@ -14,4 +14,4 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 }
 
-module.exports.tags = ['all', 'destChain']
+module.exports.tags = ['all', 'destchain']

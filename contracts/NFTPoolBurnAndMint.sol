@@ -34,6 +34,8 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         uint256 fees // The fees paid for sending the CCIP message.
     );
 
+    event TokenMinted(uint256 tokenId, address newOwner);
+
     // Event emitted when a message is received from another chain.
     // event MessageReceived(
     //     bytes32 indexed messageId, // The unique ID of the CCIP message.
@@ -49,15 +51,6 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
 
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
     string private s_lastReceivedText; // Store the last received text.
-
-    // Mapping to keep track of allowlisted destination chains.
-    mapping(uint64 => bool) public allowlistedDestinationChains;
-
-    // Mapping to keep track of allowlisted source chains.
-    mapping(uint64 => bool) public allowlistedSourceChains;
-
-    // Mapping to keep track of allowlisted senders.
-    mapping(address => bool) public allowlistedSenders;
 
     IERC20 private s_linkToken;
 
@@ -75,44 +68,19 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         s_linkToken = IERC20(_link);
     }
 
-    /// @dev Updates the allowlist status of a destination chain for transactions.
-    function allowlistDestinationChain(
-        uint64 _destinationChainSelector,
-        bool allowed
-    ) external onlyOwner {
-        allowlistedDestinationChains[_destinationChainSelector] = allowed;
-    }
-
-    /// @dev Updates the allowlist status of a source chain for transactions.
-    function allowlistSourceChain(
-        uint64 _sourceChainSelector,
-        bool allowed
-    ) external onlyOwner {
-        allowlistedSourceChains[_sourceChainSelector] = allowed;
-    }
-
-    /// @dev Updates the allowlist status of a sender for transactions.
-    function allowlistSender(address _sender, bool allowed) external onlyOwner {
-        allowlistedSenders[_sender] = allowed;
-    }
-
     function burnAndMint(
-        uint256 _tokenId,
+        uint256 tokenId,
         address newOwner,
-        uint64 destChainSelector,
+        uint64 chainSelector,
         address receiver
     ) public {
-        // verify if the sender is the owner of NFT
-        // comment this because the check is already performed by ERC721
-        // require(wnft.ownerOf(_tokenId) == msg.sender, "you are not the owner of the NFT");
-
         // transfer NFT to the pool
-        wnft.transferFrom(msg.sender, address(this), _tokenId);
+        wnft.transferFrom(msg.sender, address(this), tokenId);
         // burn the NFT
-        wnft.burn(_tokenId);
+        wnft.burn(tokenId);
         // send transaction to the destination chain
-        bytes memory payload = abi.encode(_tokenId, newOwner);
-        sendMessagePayLINK(destChainSelector, receiver, payload);
+        bytes memory payload = abi.encode(tokenId, newOwner);
+        sendMessagePayLINK(chainSelector, receiver, payload);
     }
 
     /// @notice Sends data to receiver on the destination chain.
@@ -176,6 +144,8 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
 
         // mint a wrappedToken
         wnft.mintWithSpecificTokenId(newOwner, tokenId);
+
+        emit TokenMinted(tokenId, newOwner);
 
         // emit MessageReceived(
         //     any2EvmMessage.messageId,

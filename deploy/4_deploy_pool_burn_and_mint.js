@@ -8,7 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     // const sourceChainRouter = ccipConfig.sourceRouter_
     const { destinationRouter_: destinationRouter, linkToken_: linkTokenAddr } = ccipConfig
     // const linkTokenAddr = ccipConfig.linkToken_
-    const wnftAddr = (await deployments.get('MyToken')).address
+    const wnftAddr = (await deployments.get('WrappedMyToken')).address
     // const nftDeployment = await deployments.get('MyToken')
 
 
